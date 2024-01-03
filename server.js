@@ -55,6 +55,11 @@ app.post('/images', parser.single('image'), async (req, res) => {
   }
 })
 
+app.get('/images', async (req, res) => {
+  const images = await Image.find({})
+  res.json(images)
+})
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`)
