@@ -17,7 +17,8 @@ mongoose.Promise = Promise
 
 const Image = mongoose.model('Image', {
   name: String,
-  imageUrl: String
+  imageUrl: String,
+  folder: String
 })
 
 cloudinary.config({ 
@@ -29,13 +30,17 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'images',
     allowedFormats: ['jpg', 'png'],
     transformation: [{ width: 500, height: 500, crop: 'limit' }],
   },
 })
 
 const parser = multer({ storage })
+
+const handleUpload = async (file, folder) => {
+  const res = await cloudinary.uploader.upload(file, { folder })
+  return res
+}
 
 // Add middlewares to enable cors and json body parsing
 app.use(cors())
@@ -47,9 +52,11 @@ app.get("/", (req, res) => {
 })
 
 app.post('/images', parser.single('image'), async (req, res) => {
+  const cloudinaryRes = await handleUpload(req.file.path, req.body.folder)
+  
   try {
-    const image = await new Image({ name: req.body.name, imageUrl: req.file.path }).save()
-    res.json(image)
+    const image = await new Image({ name: req.body.name, imageUrl: req.file.path, folder: req.body.folder }).save()
+    res.json({ mongoDBImage: image, cloudinaryInfo: cloudinaryRes})
   } catch (err) {
     res.status(400).json({ errors: err.errors })
   }
